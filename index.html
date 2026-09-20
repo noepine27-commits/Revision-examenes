@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Revisión de Exámenes · V10 Cámara + Galería</title>
+<title>Revisión de Exámenes · V10.1 Selector iPhone</title>
 <style>
 :root{--az:#075493;--az2:#0876cf;--bg:#eef4f9;--card:#fff;--green:#12883f;--line:#d8e2ec;--muted:#5f6b7a}
 *{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:#17202a}
@@ -31,13 +31,13 @@ table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px so
 .scanBtns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
 .scanBtns button,.galleryLabel{display:flex;align-items:center;justify-content:center;border-radius:12px;padding:14px;font-weight:800;font-size:17px;cursor:pointer}
 .galleryLabel{background:#e5f0fa;color:#074d86}
-#galleryInput{display:none}
+#galleryInput{display:block;width:100%;font-size:17px;margin-top:10px;background:white;color:#111;padding:10px;border-radius:10px;box-sizing:border-box}.nativePicker{background:#e5f0fa;color:#074d86;border-radius:12px;padding:12px;font-weight:800;text-align:left}
 .debugPreview{max-width:100%;max-height:380px;border-radius:12px;margin:10px auto;display:block}
 @media(max-width:760px){.scanBtns{grid-template-columns:1fr}.scanBtns button,.galleryLabel{font-size:18px;padding:16px}}
 </style>
 </head>
 <body>
-<header><h1>📘 Revisión de Exámenes</h1><p>Telesecundaria 1117 · Mtro. Noé Fabián Pineda Mendoza · Versión 10 · Cámara + Galería</p></header>
+<header><h1>📘 Revisión de Exámenes</h1><p>Telesecundaria 1117 · Mtro. Noé Fabián Pineda Mendoza · Versión 10.1 · Selector iPhone</p></header>
 <main>
 <nav>
 <button class="tab active" data-view="create">➕ Crear examen</button>
@@ -57,7 +57,7 @@ table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px so
 <div id="keyPhotoBox" class="upload hidden">
 <h3>📷 Fotografía de la clave</h3>
 <p>Selecciona una fotografía completa y de frente. V4 intenta leer automáticamente los círculos negros y siempre permite verificar/corregir antes de guardar.</p>
-<input id="keyImage" type="file" accept="image/*">
+<div class="nativePicker"><b>🖼️ FOTO ORIGINAL DE LA CLAVE</b><br><input id="keyImage" type="file" accept="image/jpeg,image/png,image/heic,image/heif,image/*"></div>
 <img id="keyPreview" class="preview hidden" alt="Vista previa de la clave">
 <p><button class="primary" id="analyzeKey">🔍 Leer clave</button></p>
 <div class="note">Pulsa <b>Leer clave</b>. La aplicación analizará los círculos negros de los 4 bloques. <b>Revisa siempre A/B/C/D antes de guardar.</b> Si alguna respuesta no es suficientemente clara, quedará en — para que la corrijas.</div>
@@ -84,8 +84,7 @@ table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px so
 <div class="scanBtns">
 <button class="primary" id="openCamera">📷 ABRIR CÁMARA EN VIVO</button>
 <button class="success" id="scanLive">⚡ ESCANEAR AHORA</button>
-<label class="galleryLabel" for="galleryInput">🖼️ ELEGIR FOTO DE GALERÍA</label>
-<input id="galleryInput" type="file" accept="image/*">
+<div class="nativePicker"><b>🖼️ FOTO GUARDADA DEL ALUMNO</b><br><input id="galleryInput" type="file" accept="image/jpeg,image/png,image/heic,image/heif,image/*"></div>
 <button id="closeCamera">⏹ CERRAR CÁMARA</button>
 </div>
 </div>
@@ -98,7 +97,7 @@ table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px so
 
 <section id="results" class="view card hidden">
 <h2>Resultados</h2>
-<div class="summary"><div><b id="nStudents">0</b><br>registros</div><div><b id="avg">—</b><br>promedio</div><div><b>4</b><br>campos formativos</div><div><b>V10</b><br>versión</div></div>
+<div class="summary"><div><b id="nStudents">0</b><br>registros</div><div><b id="avg">—</b><br>promedio</div><div><b>4</b><br>campos formativos</div><div><b>V10.1</b><br>versión</div></div>
 <h3>Resultados guardados</h3><div style="overflow:auto"><table><thead><tr><th>Alumno</th><th>Examen</th><th>Aciertos</th><th>Total</th><th>Calificación</th></tr></thead><tbody id="resultRows"></tbody></table></div>
 <p><button class="primary" id="csv">📥 Descargar resultados CSV</button></p>
 <div class="note">Próxima etapa: Excel (.xlsx) con hojas de resultados individuales, análisis por reactivo, resumen del grupo, interpretación automática, áreas de oportunidad y gráficas.</div>

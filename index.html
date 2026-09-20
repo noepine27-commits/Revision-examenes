@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Revisión de Exámenes · V3</title>
+<title>Revisión de Exámenes · V4</title>
 <style>
 :root{--az:#075493;--az2:#0876cf;--bg:#eef4f9;--card:#fff;--green:#12883f;--line:#d8e2ec;--muted:#5f6b7a}
 *{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:#17202a}
@@ -28,7 +28,7 @@ table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px so
 </style>
 </head>
 <body>
-<header><h1>📘 Revisión de Exámenes</h1><p>Telesecundaria 1117 · Mtro. Noé Fabián Pineda Mendoza · Versión 3</p></header>
+<header><h1>📘 Revisión de Exámenes</h1><p>Telesecundaria 1117 · Mtro. Noé Fabián Pineda Mendoza · Versión 4</p></header>
 <main>
 <nav>
 <button class="tab active" data-view="create">➕ Crear examen</button>
@@ -47,11 +47,11 @@ table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px so
 
 <div id="keyPhotoBox" class="upload hidden">
 <h3>📷 Fotografía de la clave</h3>
-<p>Selecciona una fotografía completa y de frente. V3 prepara la lectura y permite verificar/corregir antes de guardar.</p>
+<p>Selecciona una fotografía completa y de frente. V4 intenta leer automáticamente los círculos negros y siempre permite verificar/corregir antes de guardar.</p>
 <input id="keyImage" type="file" accept="image/*" capture="environment">
 <img id="keyPreview" class="preview hidden" alt="Vista previa de la clave">
 <p><button class="primary" id="analyzeKey">🔍 Leer clave</button></p>
-<div class="note">En esta V3 la imagen se carga y se prepara para reconocimiento. Para evitar guardar una clave equivocada, <b>ninguna respuesta se confirma sin tu revisión</b>. La detección automática de óvalos se integrará sobre este módulo.</div>
+<div class="note">V4: pulsa <b>Leer clave</b>. La aplicación analizará los círculos negros de los 4 bloques. <b>Revisa siempre A/B/C/D antes de guardar.</b> Si alguna respuesta no es suficientemente clara, quedará en — para que la corrijas.</div>
 </div>
 
 <div id="keyEditor" class="hidden">
@@ -76,7 +76,7 @@ table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px so
 
 <section id="results" class="view card hidden">
 <h2>Resultados</h2>
-<div class="summary"><div><b id="nStudents">0</b><br>registros</div><div><b id="avg">—</b><br>promedio</div><div><b>4</b><br>campos formativos</div><div><b>V3</b><br>versión</div></div>
+<div class="summary"><div><b id="nStudents">0</b><br>registros</div><div><b id="avg">—</b><br>promedio</div><div><b>4</b><br>campos formativos</div><div><b>V4</b><br>versión</div></div>
 <h3>Resultados guardados</h3><div style="overflow:auto"><table><thead><tr><th>Alumno</th><th>Examen</th><th>Aciertos</th><th>Total</th><th>Calificación</th></tr></thead><tbody id="resultRows"></tbody></table></div>
 <p><button class="primary" id="csv">📥 Descargar resultados CSV</button></p>
 <div class="note">Próxima etapa: Excel (.xlsx) con hojas de resultados individuales, análisis por reactivo, resumen del grupo, interpretación automática, áreas de oportunidad y gráficas.</div>
@@ -99,7 +99,38 @@ $("#photoKey").onclick=()=>{$("#keyPhotoBox").classList.remove("hidden");buildKe
 function previewFile(input,img){let f=input.files[0];if(!f)return;img.src=URL.createObjectURL(f);img.classList.remove("hidden")}
 $("#keyImage").onchange=()=>previewFile($("#keyImage"),$("#keyPreview"));
 $("#studentImage").onchange=()=>previewFile($("#studentImage"),$("#studentPreview"));
-$("#analyzeKey").onclick=()=>{if(!$("#keyImage").files[0])return alert("Primero selecciona la imagen de la clave.");buildKeyEditor();$("#keyEditor").scrollIntoView({behavior:"smooth"});alert("Imagen cargada. Verifica la clave antes de guardarla. La detección automática de óvalos se conectará en el siguiente módulo.");};
+function grayAt(ctx,x,y,r){
+ const d=ctx.getImageData(Math.max(0,Math.round(x-r)),Math.max(0,Math.round(y-r)),Math.max(1,Math.round(r*2+1)),Math.max(1,Math.round(r*2+1))).data;
+ let sum=0,n=0; for(let i=0;i<d.length;i+=4){sum+=(d[i]+d[i+1]+d[i+2])/3;n++;} return n?sum/n:255;
+}
+function readKeyFromImage(){
+ const img=$("#keyPreview"); if(!img.naturalWidth||!img.naturalHeight) throw new Error("La imagen todavía no termina de cargar.");
+ const c=document.createElement("canvas"),ctx=c.getContext("2d",{willReadFrequently:true}); c.width=img.naturalWidth;c.height=img.naturalHeight;ctx.drawImage(img,0,0);
+ // Coordenadas normalizadas del formato oficial de 4 bloques x 20 reactivos.
+ // Se usa una banda de búsqueda alrededor de cada centro para tolerar pequeños giros/recortes.
+ const blockX=[[.110,.151,.190,.228],[.334,.375,.419,.460],[.568,.609,.651,.694],[.773,.815,.863,.923]];
+ const y0=.341,y1=.937; const out=[]; const r=Math.max(3,Math.min(c.width,c.height)*.008);
+ for(let b=0;b<4;b++){out[b]=[];for(let q=0;q<20;q++){
+   const yn=y0+(y1-y0)*(q/19), scores=[];
+   for(let a=0;a<4;a++){
+     let best=255; for(let dx=-.006;dx<=.006;dx+=.003)for(let dy=-.004;dy<=.004;dy+=.004) best=Math.min(best,grayAt(ctx,(blockX[b][a]+dx)*c.width,(yn+dy)*c.height,r));
+     scores.push(best);
+   }
+   const order=[0,1,2,3].sort((i,j)=>scores[i]-scores[j]), best=order[0], second=order[1];
+   // círculo negro: suficientemente oscuro y claramente más oscuro que las alternativas impresas
+   out[b][q]=(scores[best]<105 && scores[second]-scores[best]>18)?"ABCD"[best]:"";
+ }} return out;
+}
+$("#analyzeKey").onclick=()=>{
+ if(!$("#keyImage").files[0])return alert("Primero selecciona la imagen de la clave.");
+ if(!buildKeyEditor())return;
+ try{
+   const read=readKeyFromImage(); let detected=0,total=0;
+   selectedFields().forEach(f=>{for(let q=0;q<(+$("#items").value||20);q++){total++;const v=(read[f]||[])[q]||"";const sel=$(`#keyBlocks select[data-field="${f}"][data-q="${q}"]`);if(sel){sel.value=v;if(v)detected++;}}});
+   $("#keyEditor").scrollIntoView({behavior:"smooth"});
+   $("#saveMsg").innerHTML=`<p class="${detected===total?'ok':'note'}"><b>Lectura automática:</b> ${detected} de ${total} respuestas detectadas. ${detected===total?'Revisa la clave y, si coincide, guarda el examen.':'Las que aparecen en — necesitan corrección manual antes de guardar.'}</p>`;
+ }catch(e){alert("No pude leer esta imagen automáticamente: "+e.message+" Puedes capturar la clave manualmente.");}
+};
 $("#saveExam").onclick=()=>{
  let name=$("#examName").value.trim(), group=$("#examGroup").value.trim(), n=+$("#items").value||20, fs=selectedFields();
  if(!name||!group)return alert("Escribe nombre del examen y grupo.");

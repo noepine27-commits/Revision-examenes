@@ -28,7 +28,7 @@ table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px so
 </style>
 </head>
 <body>
-<header><h1>📘 Revisión de Exámenes</h1><p>Telesecundaria 1117 · Mtro. Noé Fabián Pineda Mendoza · Versión 4</p></header>
+<header><h1>📘 Revisión de Exámenes</h1><p>Telesecundaria 1117 · Mtro. Noé Fabián Pineda Mendoza · Versión 5</p></header>
 <main>
 <nav>
 <button class="tab active" data-view="create">➕ Crear examen</button>
@@ -76,7 +76,7 @@ table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px so
 
 <section id="results" class="view card hidden">
 <h2>Resultados</h2>
-<div class="summary"><div><b id="nStudents">0</b><br>registros</div><div><b id="avg">—</b><br>promedio</div><div><b>4</b><br>campos formativos</div><div><b>V4</b><br>versión</div></div>
+<div class="summary"><div><b id="nStudents">0</b><br>registros</div><div><b id="avg">—</b><br>promedio</div><div><b>4</b><br>campos formativos</div><div><b>V5</b><br>versión</div></div>
 <h3>Resultados guardados</h3><div style="overflow:auto"><table><thead><tr><th>Alumno</th><th>Examen</th><th>Aciertos</th><th>Total</th><th>Calificación</th></tr></thead><tbody id="resultRows"></tbody></table></div>
 <p><button class="primary" id="csv">📥 Descargar resultados CSV</button></p>
 <div class="note">Próxima etapa: Excel (.xlsx) con hojas de resultados individuales, análisis por reactivo, resumen del grupo, interpretación automática, áreas de oportunidad y gráficas.</div>
@@ -99,36 +99,68 @@ $("#photoKey").onclick=()=>{$("#keyPhotoBox").classList.remove("hidden");buildKe
 function previewFile(input,img){let f=input.files[0];if(!f)return;img.src=URL.createObjectURL(f);img.classList.remove("hidden")}
 $("#keyImage").onchange=()=>previewFile($("#keyImage"),$("#keyPreview"));
 $("#studentImage").onchange=()=>previewFile($("#studentImage"),$("#studentPreview"));
-function grayAt(ctx,x,y,r){
- const d=ctx.getImageData(Math.max(0,Math.round(x-r)),Math.max(0,Math.round(y-r)),Math.max(1,Math.round(r*2+1)),Math.max(1,Math.round(r*2+1))).data;
- let sum=0,n=0; for(let i=0;i<d.length;i+=4){sum+=(d[i]+d[i+1]+d[i+2])/3;n++;} return n?sum/n:255;
+function darkRatioAt(ctx,x,y,r){
+ const x0=Math.max(0,Math.round(x-r)),y0=Math.max(0,Math.round(y-r));
+ const w=Math.max(1,Math.round(r*2+1)),h=Math.max(1,Math.round(r*2+1));
+ const d=ctx.getImageData(x0,y0,w,h).data;
+ let dark=0,n=0;
+ for(let i=0;i<d.length;i+=4){
+   const lum=.299*d[i]+.587*d[i+1]+.114*d[i+2];
+   if(lum<80)dark++; n++;
+ }
+ return n?dark/n:0;
 }
 function readKeyFromImage(){
- const img=$("#keyPreview"); if(!img.naturalWidth||!img.naturalHeight) throw new Error("La imagen todavía no termina de cargar.");
- const c=document.createElement("canvas"),ctx=c.getContext("2d",{willReadFrequently:true}); c.width=img.naturalWidth;c.height=img.naturalHeight;ctx.drawImage(img,0,0);
- // Coordenadas normalizadas del formato oficial de 4 bloques x 20 reactivos.
- // Se usa una banda de búsqueda alrededor de cada centro para tolerar pequeños giros/recortes.
- const blockX=[[.110,.151,.190,.228],[.334,.375,.419,.460],[.568,.609,.651,.694],[.773,.815,.863,.923]];
- const y0=.341,y1=.937; const out=[]; const r=Math.max(3,Math.min(c.width,c.height)*.008);
- for(let b=0;b<4;b++){out[b]=[];for(let q=0;q<20;q++){
-   const yn=y0+(y1-y0)*(q/19), scores=[];
-   for(let a=0;a<4;a++){
-     let best=255; for(let dx=-.006;dx<=.006;dx+=.003)for(let dy=-.004;dy<=.004;dy+=.004) best=Math.min(best,grayAt(ctx,(blockX[b][a]+dx)*c.width,(yn+dy)*c.height,r));
-     scores.push(best);
+ const img=$("#keyPreview");
+ if(!img.naturalWidth||!img.naturalHeight) throw new Error("La imagen todavía no termina de cargar.");
+ const c=document.createElement("canvas"),ctx=c.getContext("2d",{willReadFrequently:true});
+ c.width=img.naturalWidth;c.height=img.naturalHeight;ctx.drawImage(img,0,0);
+
+ // V5 calibrada con la plantilla real CLAVE DEL EXAMEN (1072 x 1024).
+ // Centros de A/B/C/D de cada uno de los cuatro bloques, expresados como proporción
+ // del ancho. Las 20 filas se interpolan desde el centro de la fila 1 a la fila 20.
+ const refW=1072,refH=1024;
+ const refX=[[103,149,191,233],[348,395,445,494],[610,657,703,749],[865,911,960,1005]];
+ const x=refX.map(row=>row.map(v=>v/refW));
+ const yFirst=350/refH,yLast=959/refH;
+ const radius=Math.max(4,Math.min(c.width/refW,c.height/refH)*9);
+ const out=[],confidence=[];
+
+ for(let b=0;b<4;b++){
+   out[b]=[];confidence[b]=[];
+   for(let q=0;q<20;q++){
+     const yn=yFirst+(yLast-yFirst)*(q/19);
+     const scores=x[b].map(xn=>darkRatioAt(ctx,xn*c.width,yn*c.height,radius));
+     const order=[0,1,2,3].sort((i,j)=>scores[j]-scores[i]);
+     const best=order[0],second=order[1];
+     // En la plantilla, el círculo relleno tiene mucha más superficie negra que
+     // las letras de los círculos vacíos. Si no hay separación suficiente, no adivina.
+     const certain=scores[best]>=0.42 && (scores[best]-scores[second])>=0.20;
+     out[b][q]=certain?"ABCD"[best]:"";
+     confidence[b][q]={scores,certain};
    }
-   const order=[0,1,2,3].sort((i,j)=>scores[i]-scores[j]), best=order[0], second=order[1];
-   // círculo negro: suficientemente oscuro y claramente más oscuro que las alternativas impresas
-   out[b][q]=(scores[best]<105 && scores[second]-scores[best]>18)?"ABCD"[best]:"";
- }} return out;
+ }
+ return {out,confidence};
 }
 $("#analyzeKey").onclick=()=>{
  if(!$("#keyImage").files[0])return alert("Primero selecciona la imagen de la clave.");
  if(!buildKeyEditor())return;
  try{
-   const read=readKeyFromImage(); let detected=0,total=0;
-   selectedFields().forEach(f=>{for(let q=0;q<(+$("#items").value||20);q++){total++;const v=(read[f]||[])[q]||"";const sel=$(`#keyBlocks select[data-field="${f}"][data-q="${q}"]`);if(sel){sel.value=v;if(v)detected++;}}});
+   const result=readKeyFromImage(),read=result.out; let detected=0,total=0,uncertain=[];
+   selectedFields().forEach(f=>{
+     for(let q=0;q<(+$("#items").value||20);q++){
+       total++; const v=(read[f]||[])[q]||"";
+       const sel=$(`#keyBlocks select[data-field="${f}"][data-q="${q}"]`);
+       if(sel){
+         sel.value=v;
+         sel.style.background=v?"#eaf8ef":"#fff1c7";
+         if(v)detected++; else uncertain.push(`${FIELD_NAMES[f]} ${q+1}`);
+       }
+     }
+   });
    $("#keyEditor").scrollIntoView({behavior:"smooth"});
-   $("#saveMsg").innerHTML=`<p class="${detected===total?'ok':'note'}"><b>Lectura automática:</b> ${detected} de ${total} respuestas detectadas. ${detected===total?'Revisa la clave y, si coincide, guarda el examen.':'Las que aparecen en — necesitan corrección manual antes de guardar.'}</p>`;
+   const complete=detected===total;
+   $("#saveMsg").innerHTML=`<div class="note"><b>Lectura V5:</b> ${detected} de ${total} respuestas detectadas. ${complete?'<span class="ok">✓ Se detectaron todas.</span> Revisa visualmente que coincidan antes de guardar.':'Las casillas amarillas quedaron en — porque el sistema no tuvo suficiente seguridad. Corrígelas manualmente antes de guardar.'}</div>`;
  }catch(e){alert("No pude leer esta imagen automáticamente: "+e.message+" Puedes capturar la clave manualmente.");}
 };
 $("#saveExam").onclick=()=>{

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Revisión de Exámenes · V7 QR</title>
+<title>Revisión de Exámenes · V8 Escáner móvil</title>
 <style>
 :root{--az:#075493;--az2:#0876cf;--bg:#eef4f9;--card:#fff;--green:#12883f;--line:#d8e2ec;--muted:#5f6b7a}
 *{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:#17202a}
@@ -25,10 +25,16 @@ label{font-weight:750}input[type=text],input[type=number],select{width:100%;padd
 table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px solid var(--line);text-align:left}
 .small{font-size:14px;color:var(--muted)}
 @media(max-width:760px){.grid2,.fields,.summary{grid-template-columns:1fr}.answers{grid-template-columns:repeat(2,1fr)}header h1{font-size:26px}}
+
+.cameraBox{background:#0d1720;border-radius:18px;padding:12px;margin-top:16px;text-align:center}
+#cameraVideo{width:100%;max-height:70vh;border-radius:14px;background:#000;object-fit:contain}
+.cameraActions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:10px}
+.scanStatus{font-size:18px;font-weight:800}
+@media(max-width:760px){button,.btn{width:100%;font-size:18px;padding:15px}.cameraActions button{width:100%}}
 </style>
 </head>
 <body>
-<header><h1>📘 Revisión de Exámenes</h1><p>Telesecundaria 1117 · Mtro. Noé Fabián Pineda Mendoza · Versión 7 · Lector QR</p></header>
+<header><h1>📘 Revisión de Exámenes</h1><p>Telesecundaria 1117 · Mtro. Noé Fabián Pineda Mendoza · Versión 8 · Escáner móvil</p></header>
 <main>
 <nav>
 <button class="tab active" data-view="create">➕ Crear examen</button>
@@ -64,26 +70,43 @@ table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px so
 </section>
 
 <section id="review" class="view card hidden">
-<h2>Revisar examen</h2>
+<h2>📱 Escanear alumnos</h2>
 <div class="grid2"><div><label>Examen</label><select id="examSelect"></select></div>
-<div><label>Alumno identificado</label><input id="student" type="text" placeholder="Se llenará automáticamente al leer el QR"></div></div>
-<div id="qrStatus" class="note">🔳 Aún no se ha leído un QR.</div>
-<div class="upload" style="margin-top:16px"><h3>📷 Fotografía de la hoja</h3>
-<input id="studentImage" type="file" accept="image/*" capture="environment"><img id="studentPreview" class="preview hidden">
-<p><button class="primary" id="analyzeStudent">🔍 Analizar fotografía</button></p>
-<p class="small">V7 primero identifica al alumno por QR. La lectura automática de los óvalos del alumno se conectará después de validar el QR.</p></div>
+<div><label>Alumno identificado</label><input id="student" type="text" readonly placeholder="Se llenará con el QR"></div></div>
+<div id="qrStatus" class="note">🔳 Listo para escanear.</div>
+
+<div class="cameraBox">
+<video id="cameraVideo" playsinline autoplay muted></video>
+<canvas id="cameraCanvas" class="hidden"></canvas>
+<div class="cameraActions">
+<button class="primary" id="startCamera">📷 Abrir cámara</button>
+<button class="success" id="captureScan">⚡ ESCANEAR HOJA</button>
+<button class="btn" id="stopCamera">⏹ Cerrar cámara</button>
+</div>
+</div>
+
+<div class="upload" style="margin-top:16px">
+<h3>Respaldo: foto existente</h3>
+<input id="studentImage" type="file" accept="image/*" capture="environment">
+<img id="studentPreview" class="preview hidden">
+<p><button class="primary" id="analyzeStudent">🔍 Analizar esta foto</button></p>
+</div>
+
+<div id="scanMsg" class="note scanStatus">La V8 leerá QR + respuestas A/B/C/D de la misma hoja.</div>
 <div id="studentAnswers"></div>
-<p><button class="success" id="grade">✅ Calificar y guardar</button></p><div id="gradeMsg"></div>
+<p><button class="success" id="grade">✅ Guardar resultado y siguiente</button></p>
+<div id="gradeMsg"></div>
 </section>
 
 <section id="results" class="view card hidden">
 <h2>Resultados</h2>
-<div class="summary"><div><b id="nStudents">0</b><br>registros</div><div><b id="avg">—</b><br>promedio</div><div><b>4</b><br>campos formativos</div><div><b>V7</b><br>versión</div></div>
+<div class="summary"><div><b id="nStudents">0</b><br>registros</div><div><b id="avg">—</b><br>promedio</div><div><b>4</b><br>campos formativos</div><div><b>V8</b><br>versión</div></div>
 <h3>Resultados guardados</h3><div style="overflow:auto"><table><thead><tr><th>Alumno</th><th>Examen</th><th>Aciertos</th><th>Total</th><th>Calificación</th></tr></thead><tbody id="resultRows"></tbody></table></div>
 <p><button class="primary" id="csv">📥 Descargar resultados CSV</button></p>
 <div class="note">Próxima etapa: Excel (.xlsx) con hojas de resultados individuales, análisis por reactivo, resumen del grupo, interpretación automática, áreas de oportunidad y gráficas.</div>
 </section>
 </main>
+<script async src="https://docs.opencv.org/4.x/opencv.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <script>
 const FIELD_NAMES=["Lenguajes","Saberes y Pensamiento Científico","De lo Humano y lo Comunitario","Ética, Naturaleza y Sociedades"];
@@ -216,38 +239,13 @@ async function decodeQRFromFile(file){
  }
  return "";
 }
-$("#analyzeStudent").onclick=async()=>{
- const file=$("#studentImage").files[0];
- if(!file)return alert("Primero selecciona una fotografía de la hoja del alumno.");
- const btn=$("#analyzeStudent"); btn.disabled=true; btn.textContent="🔍 Leyendo QR...";
- $("#qrStatus").innerHTML="🔳 Buscando el QR en la fotografía...";
- try{
-   const code=await decodeQRFromFile(file);
-   if(!code){
-     $("#qrStatus").innerHTML="⚠️ No pude localizar un QR. Toma la foto completa, de frente, con buena luz y vuelve a intentarlo.";
-     return;
-   }
-   const name=STUDENTS[code];
-   if(!name){
-     $("#qrStatus").innerHTML=`⚠️ Leí el código <b>${code}</b>, pero no está registrado en el grupo 3°B.`;
-     return;
-   }
-   $("#student").value=`${code} — ${name}`;
-   $("#student").dataset.code=code;
-   $("#student").dataset.name=name;
-   $("#qrStatus").innerHTML=`<span class="ok">✓ QR reconocido:</span> <b>${code}</b> — ${name}`;
- }catch(err){
-   $("#qrStatus").innerHTML="⚠️ Ocurrió un problema al leer el QR. Intenta otra fotografía.";
- }finally{
-   btn.disabled=false; btn.textContent="🔍 Analizar fotografía";
- }
-};
+$("#analyzeStudent").onclick=async()=>{const file=$("#studentImage").files[0];if(!file)return alert("Primero toma o selecciona una foto.");try{await analyzeCanvas(await canvasFromFile(file))}catch(e){$("#scanMsg").innerHTML="⚠️ "+e.message}};
 $("#grade").onclick=()=>{
  let e=exams.find(x=>String(x.id)==$("#examSelect").value), student=$("#student").value.trim();if(!e)return alert("Selecciona un examen.");if(!student)return alert("Escribe el nombre del alumno.");
  let correct=0,total=e.fields.reduce((sum,f)=>sum+(e.counts?.[f]??e.n),0),ans={};
  $$("#studentAnswers select").forEach(s=>{let f=s.dataset.field,q=+s.dataset.q;ans[f]??=[];ans[f][q]=s.value;if(s.value&&e.key[f]&&s.value===e.key[f][q])correct++});
  let grade=Math.round((correct/total*10)*10)/10;results.push({student,exam:e.name+" · "+e.group,correct,total,grade,answers:ans,date:new Date().toISOString()});localStorage.setItem("rx_results",JSON.stringify(results));
- $("#gradeMsg").innerHTML=`<h2 style="text-align:center;color:#12883f">${grade.toFixed(1)}</h2><p style="text-align:center">${correct} de ${total} aciertos</p>`;
+ $("#gradeMsg").innerHTML=`<h2 style="text-align:center;color:#12883f">✓ ${grade.toFixed(1)}</h2><p style="text-align:center">${correct} de ${total} aciertos · Guardado. Escanea al siguiente alumno.</p>`;$("#student").value="";$("#student").dataset.code="";$("#student").dataset.name="";$("#qrStatus").innerHTML="🔳 Listo para el siguiente alumno.";buildStudentEditor();
 };
 function refreshResults(){let rows=$("#resultRows");rows.innerHTML=results.map(r=>`<tr><td>${r.student}</td><td>${r.exam}</td><td>${r.correct}</td><td>${r.total}</td><td>${r.grade.toFixed(1)}</td></tr>`).join("");$("#nStudents").textContent=results.length;$("#avg").textContent=results.length?(results.reduce((a,r)=>a+r.grade,0)/results.length).toFixed(1):"—";}
 $("#csv").onclick=()=>{if(!results.length)return alert("Todavía no hay resultados.");let csv="Alumno,Examen,Aciertos,Total,Calificacion\n"+results.map(r=>[r.student,r.exam,r.correct,r.total,r.grade].map(x=>`"${String(x).replaceAll('"','""')}"`).join(",")).join("\n");let a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"}));a.download="resultados_examenes.csv";a.click();};

@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Revisión de Exámenes V2</title>
+<style>
+:root{--azul:#07549a;--azul2:#0b6bd3;--fondo:#f3f7fb;--verde:#148447;--rojo:#c62828;--amarillo:#a86d00;--texto:#17212b}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:var(--fondo);color:var(--texto)}
+header{background:linear-gradient(135deg,#073d70,#0870c9);color:#fff;padding:22px 18px}header h1{margin:0;font-size:27px}header p{margin:6px 0 0;opacity:.92}
+main{max-width:1050px;margin:auto;padding:16px}.card{background:#fff;border-radius:18px;padding:18px;margin-bottom:16px;box-shadow:0 6px 22px #16324f18}
+h2{margin-top:0;color:#064b88}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+label{display:block;font-weight:700;margin:8px 0 5px}input,select{width:100%;padding:11px;border:1px solid #c9d5e2;border-radius:10px;font-size:16px}
+button{border:0;border-radius:12px;padding:12px 16px;font-weight:800;font-size:15px;cursor:pointer}.primary{background:var(--azul2);color:#fff}.success{background:var(--verde);color:#fff}.danger{background:#feecec;color:var(--rojo)}.ghost{background:#e9f2fb;color:#064b88}
+.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}.hidden{display:none!important}
+.blocks{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px}.blockcheck{background:#f5f8fb;border-radius:10px;padding:10px}.blockcheck input{width:auto}
+.keyblock{margin-top:15px;border-top:1px solid #e4ebf2;padding-top:12px}.answers{display:grid;grid-template-columns:repeat(auto-fill,minmax(125px,1fr));gap:7px}
+.q{display:flex;align-items:center;gap:6px;background:#f6f8fa;padding:7px;border-radius:9px}.q b{min-width:24px}.q select{padding:7px}
+.result{font-size:44px;font-weight:900;color:var(--verde);text-align:center}.muted{color:#657383;text-align:center}.notice{padding:11px;background:#fff7d6;border-radius:10px;margin-top:10px}
+.photoBox{border:2px dashed #9cb7d0;border-radius:14px;padding:14px;text-align:center;background:#f8fbfe}.photoBox input{border:0}
+#preview{max-width:100%;max-height:520px;border-radius:10px;margin-top:12px;display:none}
+.status{margin-top:10px;font-weight:700}.warn{color:var(--amarillo)}.ok{color:var(--verde)}
+table{width:100%;border-collapse:collapse;margin-top:12px}th,td{padding:9px;border-bottom:1px solid #e5ebf1;text-align:left}th{background:#eef5fb}
+nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}.navbtn.active{background:var(--azul);color:#fff}
+footer{text-align:center;color:#667;padding:20px}
+</style>
+</head>
+<body>
+<header><h1>📘 Revisión de Exámenes</h1><p>Telesecundaria 1117 · Mtro. Noé Fabián Pineda Mendoza · Versión 2</p></header>
+<main>
+<nav>
+<button class="navbtn active" onclick="show('crear',this)">➕ Crear examen</button>
+<button class="navbtn ghost" onclick="show('revisar',this)">📷 Revisar</button>
+<button class="navbtn ghost" onclick="show('resultados',this)">📊 Resultados</button>
+</nav>
+
+<section id="crear" class="card">
+<h2>Crear examen</h2>
+<div class="grid"><div><label>Nombre del examen</label><input id="examName" placeholder="Ej. Diagnóstico"></div><div><label>Grupo</label><input id="examGroup" placeholder="Ej. 2° B"></div></div>
+<label>Campos formativos</label>
+<div class="blocks">
+<label class="blockcheck"><input type="checkbox" class="blk" value="Lenguajes" checked> Lenguajes</label>
+<label class="blockcheck"><input type="checkbox" class="blk" value="Saberes y Pensamiento Científico"> Saberes y Pensamiento Científico</label>
+<label class="blockcheck"><input type="checkbox" class="blk" value="De lo Humano y lo Comunitario"> De lo Humano y lo Comunitario</label>
+<label class="blockcheck"><input type="checkbox" class="blk" value="Ética, Naturaleza y Sociedades"> Ética, Naturaleza y Sociedades</label>
+</div>
+<label>Reactivos por bloque</label><select id="numQ"><option>10</option><option selected>20</option></select>
+<div class="actions"><button class="primary" onclick="buildKey()">Capturar clave</button></div><div id="keyArea"></div>
+<div class="actions"><button class="success" onclick="saveExam()">💾 Guardar examen</button></div>
+</section>
+
+<section id="revisar" class="card hidden">
+<h2>Revisar examen</h2>
+<div class="grid"><div><label>Examen</label><select id="examSelect" onchange="loadReview()"></select></div><div><label>Alumno</label><input id="studentName" placeholder="Nombre completo (QR se agregará después)"></div></div>
+
+<div class="photoBox">
+<h3>📷 Fotografía de la hoja</h3>
+<p>En celular puedes tomar una foto; en computadora puedes seleccionar una fotografía.</p>
+<input id="photoInput" type="file" accept="image/*" capture="environment" onchange="loadPhoto(event)">
+<img id="preview" alt="Vista previa">
+<div id="photoStatus" class="status"></div>
+<div class="actions" style="justify-content:center">
+<button id="detectBtn" class="primary" onclick="prepareDetection()" disabled>🔎 Analizar fotografía</button>
+</div>
+</div>
+
+<div id="reviewArea"></div>
+<div class="actions"><button class="success" onclick="grade()">✅ Calificar y guardar</button></div>
+<div id="gradeArea"></div>
+<div class="notice"><b>V2 de prueba:</b> ya permite tomar/seleccionar la foto y mantiene la corrección manual. El reconocimiento automático de óvalos está preparado como siguiente módulo; no inventa respuestas si una foto todavía no puede interpretarse con seguridad.</div>
+</section>
+
+<section id="resultados" class="card hidden"><h2>Resultados</h2><div id="resultsArea"></div>
+<div class="actions"><button class="ghost" onclick="exportCSV()">⬇️ Exportar para Excel</button><button class="danger" onclick="clearResults()">Borrar resultados de prueba</button></div>
+</section>
+</main>
+<footer>Revisión de Exámenes · V2 · Los datos de esta etapa permanecen en este dispositivo</footer>
+
+<script>
+let exams=JSON.parse(localStorage.getItem("examsV1")||"[]");
+let results=JSON.parse(localStorage.getItem("resultsV1")||"[]");
+let currentPhoto=null;
+
+function show(id,btn){document.querySelectorAll("main section").forEach(x=>x.classList.add("hidden"));document.getElementById(id).classList.remove("hidden");document.querySelectorAll(".navbtn").forEach(x=>{x.classList.remove("active");x.classList.add("ghost")});btn.classList.add("active");btn.classList.remove("ghost");if(id==="revisar")refreshExams();if(id==="resultados")renderResults()}
+function selectedBlocks(){return[...document.querySelectorAll(".blk:checked")].map(x=>x.value)}
+function buildKey(){const n=+numQ.value,bs=selectedBlocks();if(!bs.length)return alert("Selecciona al menos un campo.");let h="";bs.forEach(b=>{h+=`<div class="keyblock"><h3>${b}</h3><div class="answers">`;for(let i=1;i<=n;i++)h+=`<div class="q"><b>${i}</b><select class="key" data-block="${b}" data-q="${i}"><option value="">—</option><option>A</option><option>B</option><option>C</option><option>D</option></select></div>`;h+="</div></div>"});keyArea.innerHTML=h}
+function saveExam(){const name=examName.value.trim(),group=examGroup.value.trim(),n=+numQ.value,blocks=selectedBlocks(),keys={};if(!name)return alert("Escribe el nombre del examen.");if(!document.querySelector(".key"))return alert("Pulsa Capturar clave.");for(const b of blocks){keys[b]=[];for(let i=1;i<=n;i++){const el=document.querySelector(`.key[data-block="${CSS.escape(b)}"][data-q="${i}"]`);if(!el||!el.value)return alert(`Falta la respuesta ${i} de ${b}.`);keys[b].push(el.value)}}exams.push({id:Date.now(),name,group,n,blocks,keys});localStorage.setItem("examsV1",JSON.stringify(exams));alert("Examen guardado correctamente.");refreshExams()}
+function refreshExams(){examSelect.innerHTML=exams.length?exams.map(e=>`<option value="${e.id}">${e.name}${e.group?" · "+e.group:""}</option>`).join(""):`<option value="">No hay exámenes</option>`;loadReview()}
+function getExam(){return exams.find(e=>String(e.id)===examSelect.value)}
+function loadReview(){const e=getExam();gradeArea.innerHTML="";if(!e){reviewArea.innerHTML="<p>No hay examen guardado.</p>";return}let h="";e.blocks.forEach(b=>{h+=`<div class="keyblock"><h3>${b}</h3><div class="answers">`;for(let i=1;i<=e.n;i++)h+=`<div class="q"><b>${i}</b><select class="ans" data-block="${b}" data-q="${i}"><option value="">—</option><option>A</option><option>B</option><option>C</option><option>D</option></select></div>`;h+="</div></div>"});reviewArea.innerHTML=h}
+function loadPhoto(ev){const f=ev.target.files[0];if(!f)return;currentPhoto=f;const url=URL.createObjectURL(f);preview.src=url;preview.style.display="block";photoStatus.innerHTML='<span class="ok">✓ Fotografía cargada. Comprueba que se vea la hoja completa.</span>';detectBtn.disabled=false}
+function prepareDetection(){if(!currentPhoto)return alert("Primero selecciona o toma una foto.");photoStatus.innerHTML='<span class="warn">⚠ Fotografía lista. En esta V2 no se rellenarán respuestas automáticamente hasta calibrar el detector de óvalos para evitar calificaciones falsas. Puedes usar los selectores de abajo para corregir/capturar.</span>';reviewArea.scrollIntoView({behavior:"smooth",block:"start"})}
+function grade(){const e=getExam(),student=studentName.value.trim();if(!e)return alert("Selecciona un examen.");if(!student)return alert("Escribe el nombre del alumno.");let correct=0,total=e.n*e.blocks.length,detail=[];e.blocks.forEach(b=>{for(let i=1;i<=e.n;i++){const ans=document.querySelector(`.ans[data-block="${CSS.escape(b)}"][data-q="${i}"]`).value,key=e.keys[b][i-1],ok=ans===key;if(ok)correct++;detail.push({block:b,q:i,ans,key,ok})}});const score=Math.round(correct/total*100)/10;results.push({date:new Date().toLocaleString("es-MX"),student,exam:e.name,group:e.group,correct,total,score,detail});localStorage.setItem("resultsV1",JSON.stringify(results));gradeArea.innerHTML=`<div class="keyblock"><div class="result">${score.toFixed(1)}</div><div class="muted">${correct} de ${total} aciertos</div></div>`}
+function renderResults(){if(!results.length){resultsArea.innerHTML="<p>Aún no hay resultados.</p>";return}resultsArea.innerHTML=`<table><thead><tr><th>Fecha</th><th>Alumno</th><th>Examen</th><th>Grupo</th><th>Aciertos</th><th>Calificación</th></tr></thead><tbody>${results.slice().reverse().map(r=>`<tr><td>${r.date}</td><td>${r.student}</td><td>${r.exam}</td><td>${r.group||""}</td><td>${r.correct}/${r.total}</td><td><b>${Number(r.score).toFixed(1)}</b></td></tr>`).join("")}</tbody></table>`}
+function exportCSV(){if(!results.length)return alert("No hay resultados.");const rows=[["Fecha","Alumno","Examen","Grupo","Aciertos","Total","Calificación"],...results.map(r=>[r.date,r.student,r.exam,r.group,r.correct,r.total,r.score])];const csv="\uFEFF"+rows.map(row=>row.map(v=>`"${String(v??"").replaceAll('"','""')}"`).join(",")).join("\n");const blob=new Blob([csv],{type:"text/csv;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="resultados_examenes.csv";a.click();URL.revokeObjectURL(url)}
+function clearResults(){if(confirm("¿Borrar únicamente los resultados de prueba guardados en este dispositivo?")){results=[];localStorage.setItem("resultsV1","[]");renderResults()}}
+refreshExams();
+</script>
+</body>
+</html>

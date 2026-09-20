@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Revisión de Exámenes · V4</title>
+<title>Revisión de Exámenes · V7 QR</title>
 <style>
 :root{--az:#075493;--az2:#0876cf;--bg:#eef4f9;--card:#fff;--green:#12883f;--line:#d8e2ec;--muted:#5f6b7a}
 *{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:#17202a}
@@ -28,7 +28,7 @@ table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px so
 </style>
 </head>
 <body>
-<header><h1>📘 Revisión de Exámenes</h1><p>Telesecundaria 1117 · Mtro. Noé Fabián Pineda Mendoza · Versión 5</p></header>
+<header><h1>📘 Revisión de Exámenes</h1><p>Telesecundaria 1117 · Mtro. Noé Fabián Pineda Mendoza · Versión 7 · Lector QR</p></header>
 <main>
 <nav>
 <button class="tab active" data-view="create">➕ Crear examen</button>
@@ -42,7 +42,7 @@ table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px so
 <div><label>Grupo</label><input id="examGroup" type="text" placeholder="Ej. 1° B"></div></div>
 <h3>Campos formativos</h3>
 <div class="fields" id="fieldChecks"></div>
-<h3>Reactivos por bloque</h3><input id="items" type="number" min="1" max="50" value="20">
+<h3>Reactivos por bloque</h3><input id="items" type="number" min="1" max="20" value="20" readonly><p class="small">La plantilla oficial conserva 20 espacios por cada campo formativo.</p>
 <p><button class="primary" id="manualKey">✏️ Capturar clave manualmente</button> <button class="primary" id="photoKey">📷 Cargar clave desde imagen</button></p>
 
 <div id="keyPhotoBox" class="upload hidden">
@@ -65,33 +65,48 @@ table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px so
 
 <section id="review" class="view card hidden">
 <h2>Revisar examen</h2>
-<div class="grid2"><div><label>Examen</label><select id="examSelect"></select></div><div><label>Alumno</label><input id="student" type="text" placeholder="Nombre completo (QR se agregará después)"></div></div>
+<div class="grid2"><div><label>Examen</label><select id="examSelect"></select></div>
+<div><label>Alumno identificado</label><input id="student" type="text" placeholder="Se llenará automáticamente al leer el QR"></div></div>
+<div id="qrStatus" class="note">🔳 Aún no se ha leído un QR.</div>
 <div class="upload" style="margin-top:16px"><h3>📷 Fotografía de la hoja</h3>
 <input id="studentImage" type="file" accept="image/*" capture="environment"><img id="studentPreview" class="preview hidden">
 <p><button class="primary" id="analyzeStudent">🔍 Analizar fotografía</button></p>
-<p class="small">La estructura queda preparada para: QR → identificación → 80 óvalos → comparación con clave → calificación.</p></div>
+<p class="small">V7 primero identifica al alumno por QR. La lectura automática de los óvalos del alumno se conectará después de validar el QR.</p></div>
 <div id="studentAnswers"></div>
 <p><button class="success" id="grade">✅ Calificar y guardar</button></p><div id="gradeMsg"></div>
 </section>
 
 <section id="results" class="view card hidden">
 <h2>Resultados</h2>
-<div class="summary"><div><b id="nStudents">0</b><br>registros</div><div><b id="avg">—</b><br>promedio</div><div><b>4</b><br>campos formativos</div><div><b>V5</b><br>versión</div></div>
+<div class="summary"><div><b id="nStudents">0</b><br>registros</div><div><b id="avg">—</b><br>promedio</div><div><b>4</b><br>campos formativos</div><div><b>V7</b><br>versión</div></div>
 <h3>Resultados guardados</h3><div style="overflow:auto"><table><thead><tr><th>Alumno</th><th>Examen</th><th>Aciertos</th><th>Total</th><th>Calificación</th></tr></thead><tbody id="resultRows"></tbody></table></div>
 <p><button class="primary" id="csv">📥 Descargar resultados CSV</button></p>
 <div class="note">Próxima etapa: Excel (.xlsx) con hojas de resultados individuales, análisis por reactivo, resumen del grupo, interpretación automática, áreas de oportunidad y gráficas.</div>
 </section>
 </main>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <script>
 const FIELD_NAMES=["Lenguajes","Saberes y Pensamiento Científico","De lo Humano y lo Comunitario","Ética, Naturaleza y Sociedades"];
+const STUDENTS={
+"3B-01":"AGUILAR BADILLO ARIANA","3B-02":"AGUILAR SALINAS ELIZABETH","3B-03":"ALMANZA CANO LILIAN SARAHI","3B-04":"ALVARADO VILLEGAS ALONSO",
+"3B-05":"ALVAREZ JUAREZ GERMAN DANIEL","3B-06":"ALVAREZ OROZCO MIRIAM CELESTE","3B-07":"BARBOSA ALVAREZ CRISTIAN KEVIN","3B-08":"BELMAN GONZALEZ CAMILA",
+"3B-09":"CAPULIN LOPEZ MIRIAM JATZIRI","3B-10":"CERVANTES ALVAREZ ALEJANDRO","3B-11":"CONEJO TELLEZ ADAIR","3B-12":"GARCIA SIERRA MELANIE GUADALUPE",
+"3B-13":"GUTIERREZ RAMIREZ RICARDO EDWUARD","3B-14":"HERRERA HORTELANO YEIMMY NAOMI","3B-15":"LERMA ANAYA ERNESTO","3B-16":"LOPEZ SOLORZANO DAVID",
+"3B-17":"MENDOZA ABOYTES CECILIA JIMENA","3B-18":"MORALES MARTINEZ MARIA ANGELES","3B-19":"MORENO SOLORZANO JUAN DIEGO","3B-20":"NORIA HUICHAPA NAILA YARETZI",
+"3B-21":"PARAMO PARAMO ROSA MARIA","3B-22":"PÉREZ ABOYTES JOSÉ JOEL","3B-23":"PEREZ ZAMORA FATIMA ARIEL","3B-24":"RAMIREZ ACOSTA HECTOR DANIEL",
+"3B-25":"RODRIGUEZ CENDEJAS DANIEL","3B-26":"SALINAS HUERTA MARTIN SALVADOR","3B-27":"TOVAR GARCIA JUAN PABLO","3B-28":"TREJO MONTOYA MY DOALY",
+"3B-29":"VARGAS TORRES JULIAN BENJAMIN","3B-30":"VAZQUEZ RAMOS MARIA FERNANDA","3B-31":"VILLAFUERTE LERA DANIEL","3B-32":"VILLAFUERTE LERA EMILIANO"
+};
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 let exams=JSON.parse(localStorage.getItem("rx_exams")||"[]"), results=JSON.parse(localStorage.getItem("rx_results")||"[]");
-$("#fieldChecks").innerHTML=FIELD_NAMES.map((x,i)=>`<label class="field"><input type="checkbox" value="${i}" ${i===0?"checked":""}> ${x}</label>`).join("");
+$("#fieldChecks").innerHTML=FIELD_NAMES.map((x,i)=>`<label class="field"><input type="checkbox" value="${i}" checked> ${x}</label>`).join("");
 $$(".tab").forEach(b=>b.onclick=()=>{ $$(".tab").forEach(x=>x.classList.remove("active"));b.classList.add("active");$$(".view").forEach(v=>v.classList.add("hidden"));$("#"+b.dataset.view).classList.remove("hidden"); if(b.dataset.view==="review") refreshExams(); if(b.dataset.view==="results") refreshResults();});
 function selectedFields(){return $$("#fieldChecks input:checked").map(x=>+x.value)}
+function fieldCount(f){const el=$(`.itemCount[data-field="${f}"]`);return el?Math.max(0,Math.min(20,+el.value||0)):20}
+function fieldCounts(){return Object.fromEntries(selectedFields().map(f=>[f,fieldCount(f)]))}
 function buildKeyEditor(){
- let n=+$("#items").value||20, fs=selectedFields(); if(!fs.length){alert("Selecciona al menos un campo formativo.");return false}
- $("#keyBlocks").innerHTML=fs.map(f=>`<h3>${FIELD_NAMES[f]}</h3><div class="answers">${Array.from({length:n},(_,i)=>`<div class="ans"><b>${i+1}</b><select data-field="${f}" data-q="${i}"><option value="">—</option>${["A","B","C","D"].map(a=>`<option>${a}</option>`).join("")}</select></div>`).join("")}</div>`).join("");
+ let fs=selectedFields(); if(!fs.length){alert("Selecciona al menos un campo formativo.");return false}
+ $("#keyBlocks").innerHTML=fs.map(f=>`<h3>${FIELD_NAMES[f]} <span class="small">(${fieldCount(f)} reactivos)</span></h3><div class="answers">${Array.from({length:fieldCount(f)},(_,i)=>`<div class="ans"><b>${i+1}</b><select data-field="${f}" data-q="${i}"><option value="">—</option>${["A","B","C","D"].map(a=>`<option>${a}</option>`).join("")}</select></div>`).join("")}</div>`).join("");
  $("#keyEditor").classList.remove("hidden"); return true;
 }
 $("#manualKey").onclick=()=>buildKeyEditor();
@@ -148,7 +163,7 @@ $("#analyzeKey").onclick=()=>{
  try{
    const result=readKeyFromImage(),read=result.out; let detected=0,total=0,uncertain=[];
    selectedFields().forEach(f=>{
-     for(let q=0;q<(+$("#items").value||20);q++){
+     for(let q=0;q<fieldCount(f);q++){
        total++; const v=(read[f]||[])[q]||"";
        const sel=$(`#keyBlocks select[data-field="${f}"][data-q="${q}"]`);
        if(sel){
@@ -160,28 +175,76 @@ $("#analyzeKey").onclick=()=>{
    });
    $("#keyEditor").scrollIntoView({behavior:"smooth"});
    const complete=detected===total;
-   $("#saveMsg").innerHTML=`<div class="note"><b>Lectura V5:</b> ${detected} de ${total} respuestas detectadas. ${complete?'<span class="ok">✓ Se detectaron todas.</span> Revisa visualmente que coincidan antes de guardar.':'Las casillas amarillas quedaron en — porque el sistema no tuvo suficiente seguridad. Corrígelas manualmente antes de guardar.'}</div>`;
+   $("#saveMsg").innerHTML=`<div class="note"><b>Lectura V6:</b> ${detected} de ${total} respuestas detectadas. ${complete?'<span class="ok">✓ Se detectaron todas.</span> Revisa visualmente que coincidan antes de guardar.':'Las casillas amarillas quedaron en — porque el sistema no tuvo suficiente seguridad. Corrígelas manualmente antes de guardar.'}</div>`;
  }catch(e){alert("No pude leer esta imagen automáticamente: "+e.message+" Puedes capturar la clave manualmente.");}
 };
 $("#saveExam").onclick=()=>{
- let name=$("#examName").value.trim(), group=$("#examGroup").value.trim(), n=+$("#items").value||20, fs=selectedFields();
+ let name=$("#examName").value.trim(), group=$("#examGroup").value.trim(), fs=selectedFields(), counts=fieldCounts();
  if(!name||!group)return alert("Escribe nombre del examen y grupo.");
  if($("#keyEditor").classList.contains("hidden"))return alert("Primero captura o carga la clave.");
  let key={}; let incomplete=false;
  $$("#keyBlocks select").forEach(s=>{key[s.dataset.field]??=[];key[s.dataset.field][+s.dataset.q]=s.value;if(!s.value)incomplete=true});
  if(incomplete&&!confirm("Hay respuestas de la clave sin capturar. ¿Guardar de todos modos?"))return;
- exams.push({id:Date.now(),name,group,n,fields:fs,key});localStorage.setItem("rx_exams",JSON.stringify(exams));
+ exams.push({id:Date.now(),name,group,n:20,counts,fields:fs,key});localStorage.setItem("rx_exams",JSON.stringify(exams));
  $("#saveMsg").innerHTML='<p class="ok">✓ Examen guardado correctamente en este dispositivo.</p>';refreshExams();
 };
 function refreshExams(){ $("#examSelect").innerHTML=exams.length?exams.map(e=>`<option value="${e.id}">${e.name} · ${e.group}</option>`).join(""):`<option value="">No hay exámenes guardados</option>`; buildStudentEditor();}
 $("#examSelect").onchange=buildStudentEditor;
 function buildStudentEditor(){let e=exams.find(x=>String(x.id)==$("#examSelect").value);if(!e){$("#studentAnswers").innerHTML="";return}
- $("#studentAnswers").innerHTML=e.fields.map(f=>`<h3>${FIELD_NAMES[f]}</h3><div class="answers">${Array.from({length:e.n},(_,i)=>`<div class="ans"><b>${i+1}</b><select data-field="${f}" data-q="${i}"><option value="">—</option>${["A","B","C","D"].map(a=>`<option>${a}</option>`).join("")}</select></div>`).join("")}</div>`).join("");
+ $("#studentAnswers").innerHTML=e.fields.map(f=>`<h3>${FIELD_NAMES[f]}</h3><div class="answers">${Array.from({length:(e.counts?.[f]??e.n)},(_,i)=>`<div class="ans"><b>${i+1}</b><select data-field="${f}" data-q="${i}"><option value="">—</option>${["A","B","C","D"].map(a=>`<option>${a}</option>`).join("")}</select></div>`).join("")}</div>`).join("");
 }
-$("#analyzeStudent").onclick=()=>{if(!$("#studentImage").files[0])return alert("Primero selecciona una fotografía.");alert("Fotografía cargada. La lectura automática de QR y óvalos se conectará en la siguiente etapa; por ahora puedes verificar/capturar respuestas manualmente.");};
+async function decodeQRFromFile(file){
+ const img=await new Promise((resolve,reject)=>{
+   const im=new Image(); im.onload=()=>resolve(im); im.onerror=reject; im.src=URL.createObjectURL(file);
+ });
+ const maxSide=2200, scale=Math.min(1,maxSide/Math.max(img.naturalWidth,img.naturalHeight));
+ const c=document.createElement("canvas"); c.width=Math.round(img.naturalWidth*scale); c.height=Math.round(img.naturalHeight*scale);
+ const ctx=c.getContext("2d",{willReadFrequently:true}); ctx.drawImage(img,0,0,c.width,c.height);
+ // Primero intenta el lector QR nativo del navegador, si existe.
+ if("BarcodeDetector" in window){
+   try{
+     const detector=new BarcodeDetector({formats:["qr_code"]});
+     const codes=await detector.detect(c);
+     if(codes.length && codes[0].rawValue) return codes[0].rawValue.trim().toUpperCase();
+   }catch(e){}
+ }
+ // Respaldo compatible mediante jsQR.
+ if(typeof jsQR==="function"){
+   const data=ctx.getImageData(0,0,c.width,c.height);
+   const code=jsQR(data.data,c.width,c.height,{inversionAttempts:"attemptBoth"});
+   if(code && code.data) return code.data.trim().toUpperCase();
+ }
+ return "";
+}
+$("#analyzeStudent").onclick=async()=>{
+ const file=$("#studentImage").files[0];
+ if(!file)return alert("Primero selecciona una fotografía de la hoja del alumno.");
+ const btn=$("#analyzeStudent"); btn.disabled=true; btn.textContent="🔍 Leyendo QR...";
+ $("#qrStatus").innerHTML="🔳 Buscando el QR en la fotografía...";
+ try{
+   const code=await decodeQRFromFile(file);
+   if(!code){
+     $("#qrStatus").innerHTML="⚠️ No pude localizar un QR. Toma la foto completa, de frente, con buena luz y vuelve a intentarlo.";
+     return;
+   }
+   const name=STUDENTS[code];
+   if(!name){
+     $("#qrStatus").innerHTML=`⚠️ Leí el código <b>${code}</b>, pero no está registrado en el grupo 3°B.`;
+     return;
+   }
+   $("#student").value=`${code} — ${name}`;
+   $("#student").dataset.code=code;
+   $("#student").dataset.name=name;
+   $("#qrStatus").innerHTML=`<span class="ok">✓ QR reconocido:</span> <b>${code}</b> — ${name}`;
+ }catch(err){
+   $("#qrStatus").innerHTML="⚠️ Ocurrió un problema al leer el QR. Intenta otra fotografía.";
+ }finally{
+   btn.disabled=false; btn.textContent="🔍 Analizar fotografía";
+ }
+};
 $("#grade").onclick=()=>{
  let e=exams.find(x=>String(x.id)==$("#examSelect").value), student=$("#student").value.trim();if(!e)return alert("Selecciona un examen.");if(!student)return alert("Escribe el nombre del alumno.");
- let correct=0,total=e.fields.length*e.n,ans={};
+ let correct=0,total=e.fields.reduce((sum,f)=>sum+(e.counts?.[f]??e.n),0),ans={};
  $$("#studentAnswers select").forEach(s=>{let f=s.dataset.field,q=+s.dataset.q;ans[f]??=[];ans[f][q]=s.value;if(s.value&&e.key[f]&&s.value===e.key[f][q])correct++});
  let grade=Math.round((correct/total*10)*10)/10;results.push({student,exam:e.name+" · "+e.group,correct,total,grade,answers:ans,date:new Date().toISOString()});localStorage.setItem("rx_results",JSON.stringify(results));
  $("#gradeMsg").innerHTML=`<h2 style="text-align:center;color:#12883f">${grade.toFixed(1)}</h2><p style="text-align:center">${correct} de ${total} aciertos</p>`;

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Revisión de Exámenes · V10.1 Selector iPhone</title>
+<title>Revisión de Exámenes · V10.2 Lector corregido</title>
 <style>
 :root{--az:#075493;--az2:#0876cf;--bg:#eef4f9;--card:#fff;--green:#12883f;--line:#d8e2ec;--muted:#5f6b7a}
 *{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:#17202a}
@@ -37,7 +37,7 @@ table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px so
 </style>
 </head>
 <body>
-<header><h1>📘 Revisión de Exámenes</h1><p>Telesecundaria 1117 · Mtro. Noé Fabián Pineda Mendoza · Versión 10.1 · Selector iPhone</p></header>
+<header><h1>📘 Revisión de Exámenes</h1><p>Telesecundaria 1117 · Mtro. Noé Fabián Pineda Mendoza · Versión 10.2 · Lector corregido</p></header>
 <main>
 <nav>
 <button class="tab active" data-view="create">➕ Crear examen</button>
@@ -97,7 +97,7 @@ table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px so
 
 <section id="results" class="view card hidden">
 <h2>Resultados</h2>
-<div class="summary"><div><b id="nStudents">0</b><br>registros</div><div><b id="avg">—</b><br>promedio</div><div><b>4</b><br>campos formativos</div><div><b>V10.1</b><br>versión</div></div>
+<div class="summary"><div><b id="nStudents">0</b><br>registros</div><div><b id="avg">—</b><br>promedio</div><div><b>4</b><br>campos formativos</div><div><b>V10.2</b><br>versión</div></div>
 <h3>Resultados guardados</h3><div style="overflow:auto"><table><thead><tr><th>Alumno</th><th>Examen</th><th>Aciertos</th><th>Total</th><th>Calificación</th></tr></thead><tbody id="resultRows"></tbody></table></div>
 <p><button class="primary" id="csv">📥 Descargar resultados CSV</button></p>
 <div class="note">Próxima etapa: Excel (.xlsx) con hojas de resultados individuales, análisis por reactivo, resumen del grupo, interpretación automática, áreas de oportunidad y gráficas.</div>
@@ -307,7 +307,8 @@ function readBubblesV10(page){
  for(let b=0;b<4;b++){
   const bx=left+b*(bw+gap),start=bx+17,usable=bw-20,xs=[0,1,2,3].map(j=>(start+j*usable/3)*sx);
   for(let q=0;q<20;q++){
-   const y=(rowTop-(q+.5)*rh)*sy;
+   const yMM=rowTop-(q+.5)*rh;
+   const y=(297-yMM)*sy;
    // sample only central fill; ring of an empty bubble is mostly outside this disk
    const sc=xs.map(x=>darkness(ctx,x,y,1.35*sx));
    const ord=[0,1,2,3].sort((i,j)=>sc[j]-sc[i]),best=ord[0],second=ord[1];
@@ -334,7 +335,7 @@ async function analyzeV10(raw){
  $("#qrStatus").innerHTML=`<span class="ok">✓ QR:</span> <b>${code}</b> — ${name}`;
  buildStudentEditor();const r=readBubblesV10(page).out;let det=0,total=0;
  e.fields.forEach(f=>{const n=e.counts?.[f]??20;for(let q=0;q<n;q++){total++;const v=r[f]?.[q]||"",el=$(`#studentAnswers select[data-field="${f}"][data-q="${q}"]`);if(el){el.value=v;el.style.background=v?"#eaf8ef":"#fff1c7";if(v)det++}}});
- $("#scanMsg").innerHTML=`<span class="ok">✓ ${code} — ${name}</span><br>Detectadas: <b>${det} de ${total}</b>. ${det===total?"Revisa visualmente y guarda.":"Las amarillas quedaron vacías o dudosas; no se adivinaron."}`;
+ $("#scanMsg").innerHTML=`<span class="ok">✓ ${code} — ${name}</span><br>Detectadas: <b>${det} de ${total}</b> · lector V10.2. ${det===total?"Revisa visualmente y guarda.":"Las amarillas quedaron vacías o dudosas; no se adivinaron."}`;
  $("#studentAnswers").scrollIntoView({behavior:"smooth",block:"start"});
 }
 $("#scanLive").onclick=async()=>{try{await analyzeV10(captureVideo())}catch(e){$("#scanMsg").innerHTML="⚠️ "+e.message}};

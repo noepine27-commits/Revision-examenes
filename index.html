@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Revisión de Exámenes · V8 Escáner móvil</title>
+<title>Revisión de Exámenes · V9 Escáner calibrado</title>
 <style>
 :root{--az:#075493;--az2:#0876cf;--bg:#eef4f9;--card:#fff;--green:#12883f;--line:#d8e2ec;--muted:#5f6b7a}
 *{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:#17202a}
@@ -26,15 +26,15 @@ table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px so
 .small{font-size:14px;color:var(--muted)}
 @media(max-width:760px){.grid2,.fields,.summary{grid-template-columns:1fr}.answers{grid-template-columns:repeat(2,1fr)}header h1{font-size:26px}}
 
-.cameraBox{background:#0d1720;border-radius:18px;padding:12px;margin-top:16px;text-align:center}
-#cameraVideo{width:100%;max-height:70vh;border-radius:14px;background:#000;object-fit:contain}
+.cameraBox{background:#101820;border-radius:18px;padding:12px;margin-top:16px;text-align:center}
+#cameraVideo{width:100%;max-height:68vh;border-radius:14px;background:#000;object-fit:contain}
 .cameraActions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:10px}
-.scanStatus{font-size:18px;font-weight:800}
-@media(max-width:760px){button,.btn{width:100%;font-size:18px;padding:15px}.cameraActions button{width:100%}}
+.scanStatus{font-size:17px;font-weight:750}
+@media(max-width:760px){.cameraActions button{width:100%;font-size:18px;padding:15px}}
 </style>
 </head>
 <body>
-<header><h1>📘 Revisión de Exámenes</h1><p>Telesecundaria 1117 · Mtro. Noé Fabián Pineda Mendoza · Versión 8 · Escáner móvil</p></header>
+<header><h1>📘 Revisión de Exámenes</h1><p>Telesecundaria 1117 · Mtro. Noé Fabián Pineda Mendoza · Versión 9 · Escáner calibrado</p></header>
 <main>
 <nav>
 <button class="tab active" data-view="create">➕ Crear examen</button>
@@ -49,15 +49,15 @@ table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px so
 <h3>Campos formativos</h3>
 <div class="fields" id="fieldChecks"></div>
 <h3>Reactivos por bloque</h3><input id="items" type="number" min="1" max="20" value="20" readonly><p class="small">La plantilla oficial conserva 20 espacios por cada campo formativo.</p>
-<p><button class="primary" id="manualKey">✏️ Capturar clave manualmente</button> <button class="primary" id="photoKey">📷 Cargar clave desde imagen</button></p>
+<p><button class="primary" id="manualKey">✏️ Capturar clave manualmente</button> <button class="primary" id="photoKey">🖼️ Cargar imagen de la clave</button></p>
 
 <div id="keyPhotoBox" class="upload hidden">
-<h3>📷 Fotografía de la clave</h3>
-<p>Selecciona una fotografía completa y de frente. V4 intenta leer automáticamente los círculos negros y siempre permite verificar/corregir antes de guardar.</p>
+<h3>🖼️ Imagen de la clave</h3>
+<p>Carga la imagen original de la clave. Esto se hace una sola vez al crear el examen. Después, las hojas de alumnos se revisan con el escáner rápido.</p>
 <input id="keyImage" type="file" accept="image/*" capture="environment">
 <img id="keyPreview" class="preview hidden" alt="Vista previa de la clave">
 <p><button class="primary" id="analyzeKey">🔍 Leer clave</button></p>
-<div class="note">V4: pulsa <b>Leer clave</b>. La aplicación analizará los círculos negros de los 4 bloques. <b>Revisa siempre A/B/C/D antes de guardar.</b> Si alguna respuesta no es suficientemente clara, quedará en — para que la corrijas.</div>
+<div class="note">Pulsa <b>Leer clave</b>. La aplicación analizará los círculos negros de los 4 bloques. <b>Revisa siempre A/B/C/D antes de guardar.</b> Si alguna respuesta no es suficientemente clara, quedará en — para que la corrijas.</div>
 </div>
 
 <div id="keyEditor" class="hidden">
@@ -70,37 +70,35 @@ table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px so
 </section>
 
 <section id="review" class="view card hidden">
-<h2>📱 Escanear alumnos</h2>
+<h2>📱 Escáner rápido de alumnos</h2>
 <div class="grid2"><div><label>Examen</label><select id="examSelect"></select></div>
-<div><label>Alumno identificado</label><input id="student" type="text" readonly placeholder="Se llenará con el QR"></div></div>
+<div><label>Alumno identificado</label><input id="student" type="text" readonly placeholder="Se llenará automáticamente con el QR"></div></div>
 <div id="qrStatus" class="note">🔳 Listo para escanear.</div>
 
 <div class="cameraBox">
 <video id="cameraVideo" playsinline autoplay muted></video>
 <canvas id="cameraCanvas" class="hidden"></canvas>
 <div class="cameraActions">
-<button class="primary" id="startCamera">📷 Abrir cámara</button>
+<button class="primary" id="startCamera">📷 ABRIR CÁMARA</button>
 <button class="success" id="captureScan">⚡ ESCANEAR HOJA</button>
-<button class="btn" id="stopCamera">⏹ Cerrar cámara</button>
+<button class="btn" id="stopCamera">⏹ CERRAR CÁMARA</button>
 </div>
 </div>
+<div id="scanMsg" class="note scanStatus">Pulsa <b>ABRIR CÁMARA</b>. Haz que se vea completo el rectángulo negro exterior de la hoja y pulsa <b>ESCANEAR HOJA</b>. No necesitas guardar una fotografía.</div>
 
-<div class="upload" style="margin-top:16px">
-<h3>Respaldo: foto existente</h3>
-<input id="studentImage" type="file" accept="image/*" capture="environment">
+<details style="margin-top:16px"><summary><b>🖼️ Respaldo: usar una foto existente</b></summary>
+<div class="upload"><input id="studentImage" type="file" accept="image/*">
 <img id="studentPreview" class="preview hidden">
-<p><button class="primary" id="analyzeStudent">🔍 Analizar esta foto</button></p>
-</div>
+<p><button class="primary" id="analyzeStudent">🔍 Analizar foto</button></p></div></details>
 
-<div id="scanMsg" class="note scanStatus">La V8 leerá QR + respuestas A/B/C/D de la misma hoja.</div>
 <div id="studentAnswers"></div>
-<p><button class="success" id="grade">✅ Guardar resultado y siguiente</button></p>
+<p><button class="success" id="grade">✅ GUARDAR RESULTADO Y SIGUIENTE</button></p>
 <div id="gradeMsg"></div>
 </section>
 
 <section id="results" class="view card hidden">
 <h2>Resultados</h2>
-<div class="summary"><div><b id="nStudents">0</b><br>registros</div><div><b id="avg">—</b><br>promedio</div><div><b>4</b><br>campos formativos</div><div><b>V8</b><br>versión</div></div>
+<div class="summary"><div><b id="nStudents">0</b><br>registros</div><div><b id="avg">—</b><br>promedio</div><div><b>4</b><br>campos formativos</div><div><b>V9</b><br>versión</div></div>
 <h3>Resultados guardados</h3><div style="overflow:auto"><table><thead><tr><th>Alumno</th><th>Examen</th><th>Aciertos</th><th>Total</th><th>Calificación</th></tr></thead><tbody id="resultRows"></tbody></table></div>
 <p><button class="primary" id="csv">📥 Descargar resultados CSV</button></p>
 <div class="note">Próxima etapa: Excel (.xlsx) con hojas de resultados individuales, análisis por reactivo, resumen del grupo, interpretación automática, áreas de oportunidad y gráficas.</div>
@@ -198,7 +196,7 @@ $("#analyzeKey").onclick=()=>{
    });
    $("#keyEditor").scrollIntoView({behavior:"smooth"});
    const complete=detected===total;
-   $("#saveMsg").innerHTML=`<div class="note"><b>Lectura V6:</b> ${detected} de ${total} respuestas detectadas. ${complete?'<span class="ok">✓ Se detectaron todas.</span> Revisa visualmente que coincidan antes de guardar.':'Las casillas amarillas quedaron en — porque el sistema no tuvo suficiente seguridad. Corrígelas manualmente antes de guardar.'}</div>`;
+   $("#saveMsg").innerHTML=`<div class="note"><b>Lectura de clave:</b> ${detected} de ${total} respuestas detectadas. ${complete?'<span class="ok">✓ Se detectaron todas.</span> Revisa visualmente que coincidan antes de guardar.':'Las casillas amarillas quedaron en — porque el sistema no tuvo suficiente seguridad. Corrígelas manualmente antes de guardar.'}</div>`;
  }catch(e){alert("No pude leer esta imagen automáticamente: "+e.message+" Puedes capturar la clave manualmente.");}
 };
 $("#saveExam").onclick=()=>{
@@ -239,13 +237,107 @@ async function decodeQRFromFile(file){
  }
  return "";
 }
-$("#analyzeStudent").onclick=async()=>{const file=$("#studentImage").files[0];if(!file)return alert("Primero toma o selecciona una foto.");try{await analyzeCanvas(await canvasFromFile(file))}catch(e){$("#scanMsg").innerHTML="⚠️ "+e.message}};
+
+let cameraStream=null;
+
+async function startCameraLive(){
+ try{
+  if(!navigator.mediaDevices?.getUserMedia) throw new Error("Este navegador no permite cámara en vivo.");
+  if(cameraStream) cameraStream.getTracks().forEach(t=>t.stop());
+  cameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"},width:{ideal:1920},height:{ideal:1080}},audio:false});
+  $("#cameraVideo").srcObject=cameraStream;
+  await $("#cameraVideo").play();
+  $("#scanMsg").innerHTML="📷 <b>Cámara lista.</b> Haz que se vea completo el rectángulo negro exterior de la hoja y pulsa ⚡ ESCANEAR HOJA.";
+ }catch(e){$("#scanMsg").innerHTML="⚠️ No pude abrir la cámara en vivo. Revisa el permiso de cámara de Safari. También puedes usar «Respaldo: usar una foto existente»."}
+}
+function stopCameraLive(){if(cameraStream){cameraStream.getTracks().forEach(t=>t.stop());cameraStream=null}$("#cameraVideo").srcObject=null}
+$("#startCamera").onclick=startCameraLive;
+$("#stopCamera").onclick=stopCameraLive;
+
+function videoCanvas(){
+ const v=$("#cameraVideo");if(!v.videoWidth)throw new Error("Primero pulsa ABRIR CÁMARA.");
+ const c=$("#cameraCanvas");c.width=v.videoWidth;c.height=v.videoHeight;c.getContext("2d").drawImage(v,0,0,c.width,c.height);return c;
+}
+async function fileCanvas(file){
+ const im=await new Promise((ok,no)=>{const x=new Image();x.onload=()=>ok(x);x.onerror=no;x.src=URL.createObjectURL(file)});
+ const max=2400,k=Math.min(1,max/Math.max(im.naturalWidth,im.naturalHeight)),c=document.createElement("canvas");
+ c.width=Math.round(im.naturalWidth*k);c.height=Math.round(im.naturalHeight*k);c.getContext("2d").drawImage(im,0,0,c.width,c.height);return c;
+}
+function cvReady(){
+ return new Promise((ok,no)=>{let n=0,t=setInterval(()=>{if(window.cv&&cv.Mat){clearInterval(t);ok()}else if(++n>120){clearInterval(t);no(new Error("El lector de hoja no terminó de cargar. Revisa tu conexión y vuelve a intentar."))}},100)})
+}
+function order4(p){
+ const sums=p.map((v,i)=>[v.x+v.y,i]).sort((a,b)=>a[0]-b[0]), dif=p.map((v,i)=>[v.x-v.y,i]).sort((a,b)=>a[0]-b[0]);
+ return [p[sums[0][1]],p[dif[3][1]],p[sums[3][1]],p[dif[0][1]]];
+}
+function rectifyOfficialSheet(input){
+ const src=cv.imread(input),g=new cv.Mat(),bl=new cv.Mat(),ed=new cv.Mat();
+ cv.cvtColor(src,g,cv.COLOR_RGBA2GRAY);cv.GaussianBlur(g,bl,new cv.Size(5,5),0);cv.Canny(bl,ed,45,145);
+ let cs=new cv.MatVector(),h=new cv.Mat();cv.findContours(ed,cs,h,cv.RETR_LIST,cv.CHAIN_APPROX_SIMPLE);
+ let best=null,areaBest=0;
+ for(let i=0;i<cs.size();i++){
+  const cnt=cs.get(i),ap=new cv.Mat(),peri=cv.arcLength(cnt,true);cv.approxPolyDP(cnt,ap,.018*peri,true);
+  const area=Math.abs(cv.contourArea(ap)),ratio=area/(src.rows*src.cols);
+  if(ap.rows===4&&ratio>.28&&ratio<.92&&area>areaBest){
+   best=[];for(let r=0;r<4;r++)best.push({x:ap.intPtr(r,0)[0],y:ap.intPtr(r,0)[1]});areaBest=area;
+  }
+  cnt.delete();ap.delete();
+ }
+ cs.delete();h.delete();g.delete();bl.delete();ed.delete();
+ if(!best){src.delete();throw new Error("No pude localizar el rectángulo negro exterior. Asegúrate de que se vea completo.");}
+ const q=order4(best),W=1240,H=1754,mx=W*10/210,my=H*10/297;
+ const from=cv.matFromArray(4,1,cv.CV_32FC2,[q[0].x,q[0].y,q[1].x,q[1].y,q[2].x,q[2].y,q[3].x,q[3].y]);
+ const to=cv.matFromArray(4,1,cv.CV_32FC2,[mx,my,W-mx,my,W-mx,H-my,mx,H-my]),M=cv.getPerspectiveTransform(from,to),dst=new cv.Mat();
+ cv.warpPerspective(src,dst,M,new cv.Size(W,H),cv.INTER_LINEAR,cv.BORDER_CONSTANT,new cv.Scalar(255,255,255,255));
+ const out=document.createElement("canvas");out.width=W;out.height=H;cv.imshow(out,dst);
+ src.delete();from.delete();to.delete();M.delete();dst.delete();return out;
+}
+function innerDark(ctx,x,y,r){
+ const x0=Math.max(0,Math.round(x-r)),y0=Math.max(0,Math.round(y-r)),w=Math.max(2,Math.round(r*2)),h=Math.max(2,Math.round(r*2)),d=ctx.getImageData(x0,y0,w,h).data;
+ let z=0,n=0;for(let i=0;i<d.length;i+=4){const L=.299*d[i]+.587*d[i+1]+.114*d[i+2];if(L<115)z++;n++}return n?z/n:0;
+}
+function readOfficialBubbles(page){
+ const ctx=page.getContext("2d",{willReadFrequently:true}),mx=page.width/210,my=page.height/297;
+ const left=12,gap=2.5,bw=(210-24-3*gap)/4,top=235,bottom=18,header=18,rowTop=top-header-5,rh=(rowTop-bottom)/20;
+ const out=[[],[],[],[]],meta=[[],[],[],[]];
+ for(let b=0;b<4;b++){
+  const bx=left+b*(bw+gap),start=bx+17,usable=bw-20,xs=[0,1,2,3].map(j=>(start+j*usable/3)*mx);
+  for(let r=0;r<20;r++){
+   const y=(rowTop-(r+.5)*rh)*my,scores=xs.map(x=>innerDark(ctx,x,y,1.55*mx)),ord=[0,1,2,3].sort((a,b)=>scores[b]-scores[a]);
+   const best=ord[0],second=ord[1],certain=scores[best]>=.28&&(scores[best]-scores[second])>=.12;
+   out[b][r]=certain?"ABCD"[best]:"";meta[b][r]={scores,certain};
+  }
+ }
+ return {out,meta};
+}
+async function qrCanvas(c){
+ const ctx=c.getContext("2d",{willReadFrequently:true}),d=ctx.getImageData(0,0,c.width,c.height);
+ if(typeof jsQR==="function"){const q=jsQR(d.data,c.width,c.height,{inversionAttempts:"attemptBoth"});if(q?.data)return q.data.trim().toUpperCase()}
+ return "";
+}
+async function analyzeOfficial(raw){
+ $("#scanMsg").innerHTML="🔍 Detectando marco, enderezando hoja y leyendo QR + respuestas...";
+ await cvReady();const page=rectifyOfficialSheet(raw);
+ let code=await qrCanvas(page);if(!code)code=await qrCanvas(raw);
+ if(!code)throw new Error("No pude leer el QR.");
+ const name=STUDENTS[code];if(!name)throw new Error("Leí "+code+", pero no pertenece a 3°B.");
+ const e=exams.find(x=>String(x.id)==$("#examSelect").value);if(!e)throw new Error("Primero crea o selecciona un examen.");
+ $("#student").value=`${code} — ${name}`;$("#student").dataset.code=code;$("#student").dataset.name=name;
+ $("#qrStatus").innerHTML=`<span class="ok">✓ QR reconocido:</span> <b>${code}</b> — ${name}`;
+ buildStudentEditor();const read=readOfficialBubbles(page).out;let det=0,total=0;
+ e.fields.forEach(f=>{const n=e.counts?.[f]??20;for(let q=0;q<n;q++){total++;const v=read[f]?.[q]||"",el=$(`#studentAnswers select[data-field="${f}"][data-q="${q}"]`);if(el){el.value=v;el.style.background=v?"#eaf8ef":"#fff1c7";if(v)det++}}});
+ $("#scanMsg").innerHTML=`<span class="ok">✓ ${name}</span><br>Detecté <b>${det} de ${total}</b> respuestas. ${det===total?"Revisa rápidamente y guarda.":"Las casillas amarillas quedaron dudosas o vacías; revísalas antes de guardar."}`;
+ $("#studentAnswers").scrollIntoView({behavior:"smooth",block:"start"});
+}
+$("#captureScan").onclick=async()=>{try{await analyzeOfficial(videoCanvas())}catch(e){$("#scanMsg").innerHTML="⚠️ "+e.message}};
+$("#analyzeStudent").onclick=async()=>{const f=$("#studentImage").files[0];if(!f)return alert("Selecciona una foto.");try{await analyzeOfficial(await fileCanvas(f))}catch(e){$("#scanMsg").innerHTML="⚠️ "+e.message}};
+
 $("#grade").onclick=()=>{
  let e=exams.find(x=>String(x.id)==$("#examSelect").value), student=$("#student").value.trim();if(!e)return alert("Selecciona un examen.");if(!student)return alert("Escribe el nombre del alumno.");
  let correct=0,total=e.fields.reduce((sum,f)=>sum+(e.counts?.[f]??e.n),0),ans={};
  $$("#studentAnswers select").forEach(s=>{let f=s.dataset.field,q=+s.dataset.q;ans[f]??=[];ans[f][q]=s.value;if(s.value&&e.key[f]&&s.value===e.key[f][q])correct++});
  let grade=Math.round((correct/total*10)*10)/10;results.push({student,exam:e.name+" · "+e.group,correct,total,grade,answers:ans,date:new Date().toISOString()});localStorage.setItem("rx_results",JSON.stringify(results));
- $("#gradeMsg").innerHTML=`<h2 style="text-align:center;color:#12883f">✓ ${grade.toFixed(1)}</h2><p style="text-align:center">${correct} de ${total} aciertos · Guardado. Escanea al siguiente alumno.</p>`;$("#student").value="";$("#student").dataset.code="";$("#student").dataset.name="";$("#qrStatus").innerHTML="🔳 Listo para el siguiente alumno.";buildStudentEditor();
+ $("#gradeMsg").innerHTML=`<h2 style="text-align:center;color:#12883f">✓ ${grade.toFixed(1)}</h2><p style="text-align:center">${correct} de ${total} aciertos · Guardado. Ya puedes escanear al siguiente alumno.</p>`;$("#student").value="";$("#student").dataset.code="";$("#student").dataset.name="";$("#qrStatus").innerHTML="🔳 Listo para el siguiente alumno.";buildStudentEditor();
 };
 function refreshResults(){let rows=$("#resultRows");rows.innerHTML=results.map(r=>`<tr><td>${r.student}</td><td>${r.exam}</td><td>${r.correct}</td><td>${r.total}</td><td>${r.grade.toFixed(1)}</td></tr>`).join("");$("#nStudents").textContent=results.length;$("#avg").textContent=results.length?(results.reduce((a,r)=>a+r.grade,0)/results.length).toFixed(1):"—";}
 $("#csv").onclick=()=>{if(!results.length)return alert("Todavía no hay resultados.");let csv="Alumno,Examen,Aciertos,Total,Calificacion\n"+results.map(r=>[r.student,r.exam,r.correct,r.total,r.grade].map(x=>`"${String(x).replaceAll('"','""')}"`).join(",")).join("\n");let a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"}));a.download="resultados_examenes.csv";a.click();};
